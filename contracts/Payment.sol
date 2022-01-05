@@ -1,4 +1,5 @@
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
 /* Recurring payments on the ethereum blockchain */
 
@@ -14,16 +15,16 @@ contract Payment {
 
     // payer => (payment id => Payment struct)
     // id starts from 0 and gets incremented by one each time payer creates a new payment
-    mapping(address => mapping(uint => Payment)) all_payments;
+    mapping(address => mapping(uint => Payment)) public all_payments;
     // maps address to the amount with which the address funded the contract
-    mapping(address => uint) funding;
+    mapping(address => uint) public funding;
     // maps address to number of payments the address created, used as an id for payments
     mapping(address => uint) public created;
     // user => has created any payments
     mapping(address => bool) public has_payments;
 
     modifier paymentExists(address from, uint id) {
-        require(all_payments[from][id].amount == 0, 'payment does not exist');
+        require(all_payments[from][id].amount != 0, 'payment does not exist');
         _;
     }
 
@@ -77,17 +78,17 @@ contract Payment {
         return true;
     }
 
-    function cancelPayment(uint id) external paymentExists(id) {
+    function cancelPayment(uint id) external paymentExists(msg.sender, id) {
         delete all_payments[msg.sender][id];
         emit PaymentCancelled(msg.sender, id, block.timestamp);
     }
 
-    function suspendPayment(uint id) external paymentExists(id) {
+    function suspendPayment(uint id) external paymentExists(msg.sender, id) {
         all_payments[msg.sender][id].active = false;
         emit PaymentSuspended(msg.sender, id, block.timestamp);
     }
 
-    function resumePayment(uint id) external paymentExists(id) {
+    function resumePayment(uint id) external paymentExists(msg.sender, id) {
         all_payments[msg.sender][id].active = true;
         emit PaymentResumed(msg.sender, id, block.timestamp);
     }
@@ -95,6 +96,7 @@ contract Payment {
     // user withdraw funds
     function withdraw(uint amount) external payable {
         require(amount <= funding[msg.sender], 'amount to withdraw is greater than funds');
+        funding[msg.sender] -= amount;
         payable(msg.sender).transfer(amount);
     }
 
@@ -103,4 +105,7 @@ contract Payment {
         funding[msg.sender] += msg.value;
     }
 
+    function isPaymentActive(uint id) external view returns (bool) {
+        return all_payments[msg.sender][id].active;
+    }
 }
