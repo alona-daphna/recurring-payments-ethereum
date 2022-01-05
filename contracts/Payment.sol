@@ -22,8 +22,8 @@ contract Payment {
     // user => has created any payments
     mapping(address => bool) public has_payments;
 
-    modifier paymentExists(uint id) {
-        require(all_payments[msg.sender][id].amount == 0, 'payment does not exist');
+    modifier paymentExists(address from, uint id) {
+        require(all_payments[from][id].amount == 0, 'payment does not exist');
         _;
     }
 
@@ -60,18 +60,16 @@ contract Payment {
 
     }
 
-    function executePayment(address from, address to , uint amount, uint id) public payable paymentExists(id) returns (bool) {
-        require(amount <= funding[from], 'amount exceeds funds');
-
+    function executePayment(address from, uint id) public payable paymentExists(from, id) returns (bool) {
         // get payment struct
         Payment storage payment = all_payments[from][id];
-
+        require(payment.amount <= funding[from], 'amount exceeds funds');
         require(payment.active, 'payment is deactivated');
         require(block.timestamp >= payment.frequency + payment.last_pay, 'payment is not due yet');
 
-        payable(to).transfer(amount);
-
-        emit PaymentSent(msg.sender, to, amount);
+        funding[from] -= payment.amount;
+        payable(payment.to).transfer(payment.amount);
+        emit PaymentSent(from, payment.to, payment.amount);
 
         // set the time for the next payment
         payment.last_pay = payment.last_pay + payment.frequency;
