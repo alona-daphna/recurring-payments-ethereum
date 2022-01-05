@@ -8,20 +8,22 @@ contract Payment {
         address to;
         uint amount;
         uint last_pay; // in seconds, epoch
-        uint frequency; //the period in seconds between payments
+        uint frequency; //the period in seconds between payments, for ex. daily = 60 * 60 * 24
         bool active; // user can suspend payment
     }
 
     // payer => (payment id => Payment struct)
     // id starts from 0 and gets incremented by one each time payer creates a new payment
     mapping(address => mapping(uint => Payment)) all_payments;
-    // Maps address to the amount with which the address funded the contract
+    // maps address to the amount with which the address funded the contract
     mapping(address => uint) funding;
-    // maps address to number of payments the address created and still exist
-    mapping(address => uint) created;
+    // maps address to number of payments the address created, used as an id for payments
+    mapping(address => uint) public created;
+    // user => has created any payments
+    mapping(address => bool) public has_payments;
 
     modifier paymentExists(uint id) {
-        require(all_payments[msg.sender][id], 'payment does not exist');
+        require(all_payments[msg.sender][id].amount == 0, 'payment does not exist');
         _;
     }
 
@@ -32,40 +34,25 @@ contract Payment {
     event PaymentSent(address from, address to, uint amount);
 
 
-    // When user creates a new payment
-    // frequency = in seconds, for ex. daily = 60 * 60 * 24
-    function createPayment(address to, uint amount, uint frequency) external view {
+    function createPayment(address to, uint amount, uint frequency) external {
         require(amount > 0, 'amount must be greater than 0');
+        require(frequency > 0, 'frequency must be greater than 0');
 
         // if msg.sender's first payment
-        if(!all_payments[msg.sender][0]) {
-            executePayment(msg.sender, to, amount, 0);
-
+        if(!has_payments[msg.sender]) {
             // create a new Payment struct
-            new_payment = Payment(
-                to,
-                amount,
-                block.timestamp, // last_pay
-                frequency,
-                true // active
-                );
+            Payment memory new_payment = Payment(to, amount, block.timestamp, frequency, true);
 
             all_payments[msg.sender][0] = new_payment; // add struct to mapping
-            created[msg.sender] = 1; // increment number of payments msg.sender has created by one
+            has_payments[msg.sender] = true;
+
+            created[msg.sender] = 1; // set number of payments msg.sender has created to one
             
         } 
         else {
-             payment_id = created[msg.sender];
-             executePayment(msg.sender, to amount, payment_id);
-
-             // create a new Payment struct
-            new_payment = Payment(
-                to,
-                amount,
-                block.timestamp, // last_pay
-                frequency,
-                true // active
-                );
+             uint payment_id = created[msg.sender];
+            // create a new Payment struct
+            Payment memory new_payment = Payment(to, amount, block.timestamp, frequency, true);
 
              all_payments[msg.sender][payment_id] = new_payment; // add struct to mapping
              created[msg.sender] += 1; // increment number of payments msg.sender has created by one
@@ -73,57 +60,47 @@ contract Payment {
 
     }
 
-    // add modifiers if it gets repeatitive with the require statements
+    function executePayment(address from, address to , uint amount, uint id) public payable paymentExists(id) returns (bool) {
+        require(amount <= funding[from], 'amount exceeds funds');
 
-    function executePayment(address from, address to , uint amount, uint id) public view paymentExists(id) returns (bool) {
         // get payment struct
-        payment = all_payments[from][id];
+        Payment storage payment = all_payments[from][id];
 
         require(payment.active, 'payment is deactivated');
         require(block.timestamp >= payment.frequency + payment.last_pay, 'payment is not due yet');
 
-        to.transfer(amount);
+        payable(to).transfer(amount);
 
         emit PaymentSent(msg.sender, to, amount);
 
         // set the time for the next payment
-        payment.last_pay = payment.last_pay + frequency;
+        payment.last_pay = payment.last_pay + payment.frequency;
 
         return true;
     }
 
-    function cancelPayment(uint id) external view paymentExists(id) {
-        // iterate until payment to be deleted and  
-        for(uint i = 0; i < created[msg.sender]; i++) {
-            if(i == id){
-                delete all_payments[msg.sender][id];
-                for (uint index = i; index < created[msg.sender]-1; index++) {
-                    all_payments[msg.sender][index] = all_payments[msg.sender][index+1];
-                }
-                break;
-            }
-        }
-        created[msg.sender] -= 1;
-
+    function cancelPayment(uint id) external paymentExists(id) {
+        delete all_payments[msg.sender][id];
         emit PaymentCancelled(msg.sender, id, block.timestamp);
     }
 
-    // params: payment id
-    function suspendPayment(uint id) external view paymentExists(id) {
+    function suspendPayment(uint id) external paymentExists(id) {
         all_payments[msg.sender][id].active = false;
         emit PaymentSuspended(msg.sender, id, block.timestamp);
     }
 
-    function resumePayment(uint id) external view paymentExists(id) {
+    function resumePayment(uint id) external paymentExists(id) {
         all_payments[msg.sender][id].active = true;
         emit PaymentResumed(msg.sender, id, block.timestamp);
     }
 
-    function withdraw(uint amount) external view {
+    // user withdraw funds
+    function withdraw(uint amount) external payable {
         require(amount <= funding[msg.sender], 'amount to withdraw is greater than funds');
-        msg.sender.transfer(amount);
+        payable(msg.sender).transfer(amount);
     }
 
+    // user funds the contract
     receive() external payable {
         funding[msg.sender] += msg.value;
     }
