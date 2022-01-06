@@ -45,9 +45,9 @@ contract('Payment', addresses => {
         await payment.suspendPayment(0);
         await expectRevert(payment.executePayment(payer, 0), 'payment is deactivated');
 
-        // await time.increase(ONE_DAY)
-        // await payment.resumePayment(0);
-        // await expectRevert(payment.executePayment(payer, 0), 'payment is not due yet');
+        await time.increase(ONE_DAY)
+        await payment.resumePayment(0);
+        await expectRevert(payment.executePayment(payer, 0), 'payment is not due yet');
     });
 
     it('should cancel payment', async () => {
@@ -80,43 +80,43 @@ contract('Payment', addresses => {
         await expectRevert(payment.createPayment(payee, 100, 0, {from:payer}), 'frequency must be greater than 0');
     });
 
-    // it('payee should receive payment', async () => {
-    //     // fund the contract
-    //     await web3.eth.sendTransaction({
-    //         from: payer,
-    //         to: payment.address,
-    //         value:  '100'
-    //     });
-    //     await payment.createPayment(payee, 10, ONE_DAY, {from:payer});
+    it('payee should receive payment', async () => {
+        // fund the contract
+        await web3.eth.sendTransaction({
+            from: payer,
+            to: payment.address,
+            value:  '100'
+        });
+        await payment.createPayment(payee, 10, ONE_DAY, {from:payer});
 
-    //     // mock the passage of time - one day
-    //     await time.increase(ONE_DAY)
-    //     //get balance of payee before the transfer
-    //     var balance = await web3.eth.getBalance(payee);
+        // mock the passage of time - one day
+        await time.increase(ONE_DAY)
+        //get balance of payee before the transfer
+        var balance = await web3.eth.getBalance(payee);
 
-    //     await payment.executePayment(payer, 0);
-    //     var new_balance = await web3.eth.getBalance(payee);
-    //     // compare the balance from before to after the transfer
-    //     chai.assert.equal(new_balance == parseInt(balance)+10);
-    //     chai.assert.equal(await payment.funding(payer), 90);
+        await payment.executePayment(payer, 0);
+        var new_balance = await web3.eth.getBalance(payee);
+        // compare the balance from before to after the transfer
+        chai.assert.equal(new_balance == parseInt(balance)+10);
+        chai.assert.equal(await payment.funding(payer), 90);
 
-    //     // payee can call the function over and over until last_pay + frequency catches up with block.timestamp
-    //     // time passage of three days
-    //     var days = 3;
-    //     await time.increase(ONE_DAY*days);
-    //     for(var i = 0; i < 3; i++){
-    //         try {
-    //             await payment.executePayment(payer, 0);
-    //         } catch (error) {
-    //             throw new Error("calling executePayment consecutively faild\nreason: "+error);
-    //         }
-    //     }
+        // payee can call the function over and over until last_pay + frequency catches up with block.timestamp
+        // time passage of three days
+        var days = 3;
+        await time.increase(ONE_DAY*days);
+        for(var i = 0; i < 3; i++){
+            try {
+                await payment.executePayment(payer, 0);
+            } catch (error) {
+                throw new Error("calling executePayment consecutively faild\nreason: "+error);
+            }
+        }
 
-    //     balance = await web3.eth.getBalance(payee);
-    //     chai.assert.equal(balance == parseInt(new_balance)+10*days);
-    //     chai.assert.equal(await payment.funding[payer], 90-10*days);
+        balance = await web3.eth.getBalance(payee);
+        chai.assert.equal(balance == parseInt(new_balance)+10*days);
+        chai.assert.equal(await payment.funding[payer], 90-10*days);
 
-    // });
+    });
 
     it('payee should fail to receive payment', async () => {
 
