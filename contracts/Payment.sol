@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 /* Recurring payments on the ethereum blockchain */
 
-contract Payment {
+contract RecurringPayment {
 
     struct Payment {
         address to;
@@ -90,6 +90,7 @@ contract Payment {
 
     function resumePayment(uint id) external paymentExists(msg.sender, id) {
         all_payments[msg.sender][id].active = true;
+        all_payments[msg.sender][id].last_pay = block.timestamp;
         emit PaymentResumed(msg.sender, id, block.timestamp);
     }
 
@@ -103,9 +104,5 @@ contract Payment {
     // user funds the contract
     receive() external payable {
         funding[msg.sender] += msg.value;
-    }
-
-    function isPaymentActive(uint id) external view returns (bool) {
-        return all_payments[msg.sender][id].active;
     }
 }
