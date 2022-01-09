@@ -77,6 +77,7 @@ contract('Payment', addresses => {
 
     it('should fail to create payment', async () => {
         await expectRevert(payment.createPayment(payee, 0, ONE_DAY, {from:payer}), 'amount must be greater than 0');
+        await expectRevert(payment.createPayment(payee, 10, ONE_DAY, {from:payer}), 'amount exceeds funds');
         await expectRevert(payment.createPayment(payee, 100, 0, {from:payer}), 'frequency must be greater than 0');
     });
 

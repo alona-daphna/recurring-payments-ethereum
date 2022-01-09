@@ -37,6 +37,7 @@ contract RecurringPayment {
 
     function createPayment(address to, uint amount, uint frequency) external {
         require(amount > 0, 'amount must be greater than 0');
+        require(amount <= funding[msg.sender], 'amount exceeds funds');
         require(frequency > 0, 'frequency must be greater than 0');
 
         // if msg.sender's first payment
