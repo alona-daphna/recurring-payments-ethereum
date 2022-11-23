@@ -58,6 +58,15 @@ contract Recur {
 
 
     function createPayment(address to, string memory label, uint amount, uint interval) public {
+        require(amount > 0, 'amount must be greater than 0');
+        require(msg.sender != to, 'Payer cannot be the payee');
+        count += 1;
+
+        Payment memory payment = Payment(count, msg.sender, label, to, amount, block.timestamp, interval, false);
+
+        // add to outgoing array and incoming array
+        incomingPayments[to].push(payment);
+        outgoingPayments[msg.sender].push(payment);
 
         emit CreatePayment(msg.sender, to, label, amount, interval);
     }
@@ -65,18 +74,42 @@ contract Recur {
 
     function deletePayment(uint id) public paymentExists(id) onlyPayer(msg.sender, id) {
         // transfer funds back to the sender
+        uint amount = funds[msg.sender][id];
+        delete funds[msg.sender][id];
+        payable(msg.sender).transfer(amount);
+
+        for (uint i = 0; i < outgoingPayments[msg.sender].length; i++) {
+            if (outgoingPayments[msg.sender][i].id == id) {
+                // delete payment from sender's outgoing payments
+                delete outgoingPayments[msg.sender][i];
+            }
+        }
+
+        for (uint i = 0; i < incomingPayments[all_payments[id].to].length; i++) {
+            if (incomingPayments[all_payments[id].to][i].id == id) {
+                // delete payment from receiver's incoming payments
+                delete incomingPayments[all_payments[id].to][i];
+            }
+        }
+
+        // delete from total payments mapping
+        delete all_payments[id];
 
         emit DeletePayment(msg.sender, id);
     }
 
-    function deactivatePayment(uint id) public paymentExists(id) paymentIsActive(id) {
-        // only payer or the contract
+    function contractDeactivatePayment(uint id) public paymentExists(id) paymentIsActive(id) {
         all_payments[id].active = false;
 
         emit DeactivatePayment(msg.sender, id);
     }
 
-    function activatePayment(uint id) public paymentExists(id) onlyPayer(msg.sender, id) {
+    // so that the payer can deactivate payment and also the contract when funds get depleted
+    function UserDeactivatePayment(uint id) public paymentExists(id) onlyPayer(msg.sender, id) {
+        contractDeactivatePayment(id);
+    }
+    
+    function activatePayment(uint id) private paymentExists(id) {
         require(funds[msg.sender][id] >= all_payments[id].amount, 'Payment amount exceeds funds');
         all_payments[id].active = true;
 
@@ -111,7 +144,7 @@ contract Recur {
         return fundsToCollect;
     }
 
-    // I need to collect each funds separately because for each payment the funder is different.
+    // need to collect each funds separately because for each payment the funder is different.
     function collectFundsById(uint id) public payable paymentExists(id) paymentIsActive(id) onlyPayee(msg.sender, id) {
         // requires
 
@@ -144,7 +177,7 @@ contract Recur {
     function withdraw(uint id, uint amount) public payable onlyPayer(msg.sender, id) {
         funds[msg.sender][id] -= amount;
         if (funds[msg.sender][id] < all_payments[id].amount) {
-            deactivatePayment(id);
+            contractDeactivatePayment(id);
         }
 
         payable(msg.sender).transfer(amount);
