@@ -104,6 +104,9 @@ function App() {
           <p>Amount</p>
           <p>Interval</p>
         </div>
+        <div className="claim-funds">
+          <button className='button'>Claim funds</button>
+        </div>
       </div>
     </div>
   );
