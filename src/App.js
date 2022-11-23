@@ -70,10 +70,10 @@ function App() {
         <h3>Balance: {balance} ETH</h3>
       </div>
 
-      <div className='call-to-pay'>
+      <div className='fund-payment'>
         <form>
           <input type="number" name="name" placeholder='Enter payment ID' />
-          <input className='button' type="submit" value="Claim/Send" />
+          <input className='button' type="submit" value="Fund payment" />
         </form>
       </div>
       
@@ -106,6 +106,19 @@ function App() {
         </div>
         <div className="claim-funds">
           <button className='button'>Claim funds</button>
+        </div>
+      </div>
+
+      <div className="deactivated box">
+        <div className="payments-header">
+          <h3>Deactivated payments</h3>
+        </div>
+        <div className="payment-details">
+          <p>ID</p>
+          <p>Label</p>
+          <p>From</p>
+          <p>Amount</p>
+          <p>Interval</p>
         </div>
       </div>
     </div>
