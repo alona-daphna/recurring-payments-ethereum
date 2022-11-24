@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 
@@ -65,6 +66,8 @@ contract Recur {
 
         Payment memory payment = Payment(count, msg.sender, label, to, amount, block.timestamp, interval, false);
 
+        all_payments[count] = payment;
+
         // add to outgoing array and incoming array
         incomingPayments[to].push(payment);
         outgoingPayments[msg.sender].push(payment);
@@ -117,12 +120,12 @@ contract Recur {
         emit ActivatePayment(msg.sender, id);
     }
 
-    function getNumOutgoingPayments(address who) public view returns (uint) {
-        return outgoingPayments[who].length;
+    function getNumOutgoingPayments(address payer) public view returns (uint) {
+        return outgoingPayments[payer].length;
     }
 
-    function getNumIncomingPayments(address who) public view returns (uint) {
-        return incomingPayments[who].length;
+    function getNumIncomingPayments(address payee) public view returns (uint) {
+        return incomingPayments[payee].length;
     }
 
     // determine how much funds are available to collect from an incoming payment by id
