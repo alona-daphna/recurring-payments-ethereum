@@ -61,7 +61,7 @@ function App() {
     <div className="App">
       {!connected &&
         <div className="connection">
-          <button className='button' onClick={handleConnect}>Connect you wallet</button>
+          <button className='button' onClick={handleConnect}>Connect your wallet</button>
         </div>
       }
 
@@ -72,8 +72,9 @@ function App() {
 
       <div className='fund-payment'>
         <form>
+          <input type="button" className='button' value="Withdraw funds" />
           <input type="number" name="name" placeholder='Enter payment ID' />
-          <input className='button' type="submit" value="Fund payment" />
+          <input type="button" className='button' value="Fund payment" />
         </form>
       </div>
       
@@ -87,6 +88,8 @@ function App() {
           <p>To</p>
           <p>Amount</p>
           <p>Interval</p>
+          <p>Remaining</p>
+          <p>Funded untill</p>
         </div>
         <div className="create-new-payment">
           <button className='button'>Create new payment</button>
@@ -103,6 +106,8 @@ function App() {
           <p>From</p>
           <p>Amount</p>
           <p>Interval</p>
+          <p>Available</p>
+          <p>Next payment</p>
         </div>
         <div className="claim-funds">
           <button className='button'>Claim funds</button>
@@ -119,6 +124,7 @@ function App() {
           <p>From</p>
           <p>Amount</p>
           <p>Interval</p>
+          <p>Remaining</p>
         </div>
       </div>
     </div>
