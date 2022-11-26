@@ -56,7 +56,7 @@ contract Recur {
     event Withdraw(address who, uint amount, uint paymentId);
     event ClaimPayments(address who, uint amount);
     // transfer tokens from the sender funds kept inside the contract
-    event Transfer(address to, uint amount, uint paymentId); 
+    event Transfer(address from, address to, uint amount, uint paymentId); 
 
 
     function createPayment(address to, string memory label, uint amount, uint interval) public {
@@ -102,20 +102,34 @@ contract Recur {
         emit DeletePayment(msg.sender, id);
     }
 
-    function contractDeactivatePayment(uint id) private paymentExists(id) paymentIsActive(id) {
+    function contractDeactivatePayment(uint id) private paymentExists(id) {
+        if (getAllUnclaimedFunds(all_payments[id].to) > 0) {
+            contractCollectAllFunds(all_payments[id].to);
+        }
+
         all_payments[id].active = false;
 
         emit DeactivatePayment(msg.sender, id);
     }
 
+    function contractCollectAllFunds(address payee) private {
+        for (uint i=0; i < incomingPayments[payee].length; i++) {
+            collectFundsById(incomingPayments[payee][i].id, payee);
+        }
+        uint allClaimableFunds = getAllUnclaimedFunds(payee);
+
+        emit ClaimPayments(payee, allClaimableFunds);
+    }
+
     // so that the payer can deactivate payment and also the contract when funds get depleted
-    function UserDeactivatePayment(uint id) public paymentExists(id) onlyPayer(msg.sender, id) {
+    function deactivatePayment(uint id) public paymentExists(id) onlyPayer(msg.sender, id) {
         contractDeactivatePayment(id);
     }
     
     function activatePayment(uint id) public paymentExists(id) onlyPayer(msg.sender, id) {
         require(funds[id] >= all_payments[id].amount, 'Payment amount exceeds funds');
         all_payments[id].active = true;
+        all_payments[id].lastPay =  block.timestamp;
 
         emit ActivatePayment(msg.sender, id);
     }
@@ -152,8 +166,10 @@ contract Recur {
     function getAllUnclaimedFunds(address payee) public view returns (uint) {
         uint fundsToCollect = 0;
         for (uint i=0; i < incomingPayments[payee].length; i++) {
-            (uint claimableFunds, uint last_pay) = getUnclaimedFundsById(incomingPayments[payee][i].id, payee);
-            fundsToCollect += claimableFunds;
+            if (incomingPayments[payee][i].active == true) {
+                (uint claimableFunds, uint last_pay) = getUnclaimedFundsById(incomingPayments[payee][i].id, payee);
+                fundsToCollect += claimableFunds;
+            }
         }
 
         return fundsToCollect;
@@ -177,16 +193,11 @@ contract Recur {
 
         // transfer to payee the available funds
         payable(payee).transfer(fundsToCollect);
-        emit Transfer(payee, all_payments[id].amount, id);
+        emit Transfer(all_payments[id].from, payee, all_payments[id].amount, id);
     }
 
     function collectAllFunds() public {
-        for (uint i=0; i < incomingPayments[msg.sender].length; i++) {
-            collectFundsById(incomingPayments[msg.sender][i].id, msg.sender);
-        }
-        uint allClaimableFunds = getAllUnclaimedFunds(msg.sender);
-
-        emit ClaimPayments(msg.sender, allClaimableFunds);
+        contractCollectAllFunds(msg.sender);
     }
 
 
