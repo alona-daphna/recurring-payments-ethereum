@@ -103,11 +103,27 @@ contract Recur {
     }
 
     function contractDeactivatePayment(uint id) private paymentExists(id) {
+
         if (getAllUnclaimedFunds(all_payments[id].to) > 0) {
             contractCollectAllFunds(all_payments[id].to);
         }
 
         all_payments[id].active = false;
+
+        // update structs in array!!!
+        for (uint i = 0; i < incomingPayments[all_payments[id].to].length; i++) {
+            if (incomingPayments[all_payments[id].to][i].id == id) {
+                incomingPayments[all_payments[id].to][i].active = false;
+            }
+        }
+
+        for (uint i = 0; i < outgoingPayments[all_payments[id].from].length; i++) {
+            if (outgoingPayments[all_payments[id].from][i].id == id) {
+                outgoingPayments[all_payments[id].from][i].active = false;
+            }
+
+        }
+
 
         emit DeactivatePayment(msg.sender, id);
     }
@@ -131,6 +147,20 @@ contract Recur {
         all_payments[id].active = true;
         all_payments[id].lastPay =  block.timestamp;
 
+        // update structs in array!!!
+        for (uint i = 0; i < incomingPayments[all_payments[id].to].length; i++) {
+            if (incomingPayments[all_payments[id].to][i].id == id) {
+                incomingPayments[all_payments[id].to][i].active = true;
+            }
+        }
+
+        for (uint i = 0; i < outgoingPayments[all_payments[id].from].length; i++) {
+            if (outgoingPayments[all_payments[id].from][i].id == id) {
+                outgoingPayments[all_payments[id].from][i].active = true;
+            }
+
+        }
+
         emit ActivatePayment(msg.sender, id);
     }
 
@@ -143,44 +173,66 @@ contract Recur {
     }
 
     // determine how much funds are available to collect from an incoming payment by id
-    function getUnclaimedFundsById(uint id, address payee) public view paymentExists(id) paymentIsActive(id) returns (uint, uint) {
+    function getUnclaimedFundsById(uint id) public view paymentExists(id) paymentIsActive(id) returns (uint, uint) {
+
         uint availableToCollect = 0;
         uint paymentFund = funds[id];
         uint last_pay = all_payments[id].lastPay;
-        for (uint i=0; i < incomingPayments[payee].length; i++) {
-            if (incomingPayments[payee][i].id == id) {
-                Payment memory payment = incomingPayments[payee][i];
-                // calculate how much funds payee is entitled to collect now
-                while (block.timestamp >= payment.interval + last_pay && paymentFund >= payment.amount) {
-                    availableToCollect += payment.amount;
-                    paymentFund -= payment.amount;
-                    last_pay = last_pay + payment.interval;
-                }
-            }
+
+        Payment memory payment = all_payments[id];
+        while (block.timestamp >= payment.interval + last_pay && paymentFund >= payment.amount) {
+            availableToCollect += payment.amount;
+            paymentFund -= payment.amount;
+            last_pay = last_pay + payment.interval;
         }
+
 
         return (availableToCollect, last_pay);
     }
 
     // determine how much funds are available to collect from all incoming payments
     function getAllUnclaimedFunds(address payee) public view returns (uint) {
+        require(incomingPayments[payee][0].id == 1, "incorrect id");
+        // THIS
+        require(incomingPayments[payee][0].active == true, "PAYMENT NOT ACTIVE!!!");
         uint fundsToCollect = 0;
-        for (uint i=0; i < incomingPayments[payee].length; i++) {
-            if (incomingPayments[payee][i].active == true) {
-                (uint claimableFunds, uint last_pay) = getUnclaimedFundsById(incomingPayments[payee][i].id, payee);
-                fundsToCollect += claimableFunds;
-            }
-        }
+        uint claimableFunds;
+
+        // this works!! when I explicitly pass the id
+        (claimableFunds,) = getUnclaimedFundsById(1);
+        fundsToCollect += claimableFunds;
+
+        // this doesnt
+        // for (uint i=0; i < incomingPayments[payee].length; i++) {
+        //     if (incomingPayments[payee][i].active == true) {
+        //         (claimableFunds,) = getUnclaimedFundsById(incomingPayments[payee][i].id);
+        //         fundsToCollect += claimableFunds;
+        //     }
+        // }
 
         return fundsToCollect;
     }
 
     // need to collect each funds separately because for each payment the funder is different.
     function collectFundsById(uint id, address payee) public payable paymentExists(id) paymentIsActive(id) onlyPayee(payee, id) {
-        (uint fundsToCollect, uint last_pay) = getUnclaimedFundsById(id, payee);
+        (uint fundsToCollect, uint last_pay) = getUnclaimedFundsById(id);
         funds[id] -= fundsToCollect;
         // update lastPay
         all_payments[id].lastPay = last_pay;
+        // update structs in array!!!
+        for (uint i = 0; i < incomingPayments[all_payments[id].to].length; i++) {
+            if (incomingPayments[all_payments[id].to][i].id == id) {
+                incomingPayments[all_payments[id].to][i].lastPay = last_pay;
+            }
+        }
+
+        for (uint i = 0; i < outgoingPayments[all_payments[id].from].length; i++) {
+            if (outgoingPayments[all_payments[id].from][i].id == id) {
+                outgoingPayments[all_payments[id].from][i].lastPay = last_pay;
+            }
+
+        }
+
 
         // all_payments[id].lastPay = block.timestamp;
 
