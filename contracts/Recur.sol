@@ -192,23 +192,15 @@ contract Recur {
 
     // determine how much funds are available to collect from all incoming payments
     function getAllUnclaimedFunds(address payee) public view returns (uint) {
-        require(incomingPayments[payee][0].id == 1, "incorrect id");
-        // THIS
-        require(incomingPayments[payee][0].active == true, "PAYMENT NOT ACTIVE!!!");
         uint fundsToCollect = 0;
         uint claimableFunds;
 
-        // this works!! when I explicitly pass the id
-        (claimableFunds,) = getUnclaimedFundsById(1);
-        fundsToCollect += claimableFunds;
-
-        // this doesnt
-        // for (uint i=0; i < incomingPayments[payee].length; i++) {
-        //     if (incomingPayments[payee][i].active == true) {
-        //         (claimableFunds,) = getUnclaimedFundsById(incomingPayments[payee][i].id);
-        //         fundsToCollect += claimableFunds;
-        //     }
-        // }
+        for (uint i=0; i < incomingPayments[payee].length; i++) {
+            if (incomingPayments[payee][i].active == true) {
+                (claimableFunds,) = getUnclaimedFundsById(incomingPayments[payee][i].id);
+                fundsToCollect += claimableFunds;
+            }
+        }
 
         return fundsToCollect;
     }
