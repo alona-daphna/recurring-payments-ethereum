@@ -130,7 +130,9 @@ contract Recur {
 
     function contractCollectAllFunds(address payee) private {
         for (uint i=0; i < incomingPayments[payee].length; i++) {
-            collectFundsById(incomingPayments[payee][i].id, payee);
+            if(incomingPayments[payee][i].active) {
+                collectFundsById(incomingPayments[payee][i].id, payee); 
+            }
         }
         uint allClaimableFunds = getAllUnclaimedFunds(payee);
 
