@@ -25,6 +25,7 @@ contract Recur {
     uint count; 
     // keeps track of the funding for each payment.
     mapping(uint => uint) public funds;
+    mapping(address => uint) private toTransfer;
 
     modifier paymentExists(uint id) {
         require(all_payments[id].amount != 0, 'payment does not exist');
@@ -54,9 +55,7 @@ contract Recur {
     event DepletedFunds(uint paymentId);
     event Fund(address who, uint amount, uint paymentId);
     event Withdraw(address who, uint amount, uint paymentId);
-    event ClaimPayments(address who, uint amount);
-    // transfer tokens from the sender funds kept inside the contract
-    event Transfer(address from, address to, uint amount, uint paymentId); 
+    event Transfer(address to, uint amount); 
 
 
     function createPayment(address to, string memory label, uint amount, uint interval) public {
@@ -104,7 +103,9 @@ contract Recur {
 
     function contractDeactivatePayment(uint id) private paymentExists(id) {
 
-        if (getAllUnclaimedFunds(all_payments[id].to) > 0) {
+        // if payee had unclaimed funds &
+        // contractCollectAllFunds has not been already called
+        if (getAllUnclaimedFunds(all_payments[id].to) > 0 && toTransfer[all_payments[id].to] == 0) {
             contractCollectAllFunds(all_payments[id].to);
         }
 
@@ -129,14 +130,18 @@ contract Recur {
     }
 
     function contractCollectAllFunds(address payee) private {
+
         for (uint i=0; i < incomingPayments[payee].length; i++) {
             if(incomingPayments[payee][i].active) {
                 collectFundsById(incomingPayments[payee][i].id, payee); 
             }
         }
-        uint allClaimableFunds = getAllUnclaimedFunds(payee);
 
-        emit ClaimPayments(payee, allClaimableFunds);
+        uint to_transfer = toTransfer[payee];
+        toTransfer[payee] = 0;
+        payable(payee).transfer(to_transfer);
+        emit Transfer(payee, to_transfer);
+
     }
 
     // so that the payer can deactivate payment and also the contract when funds get depleted
@@ -209,6 +214,7 @@ contract Recur {
 
     // need to collect each funds separately because for each payment the funder is different.
     function collectFundsById(uint id, address payee) public payable paymentExists(id) paymentIsActive(id) onlyPayee(payee, id) {
+
         (uint fundsToCollect, uint last_pay) = getUnclaimedFundsById(id);
         funds[id] -= fundsToCollect;
         // update lastPay
@@ -227,8 +233,7 @@ contract Recur {
 
         }
 
-
-        // all_payments[id].lastPay = block.timestamp;
+        toTransfer[payee] += fundsToCollect;
 
         // if what's left in the fund is insufficient for the next payment,
         // deactivate it.
@@ -237,9 +242,6 @@ contract Recur {
             contractDeactivatePayment(id);
         }
 
-        // transfer to payee the available funds
-        payable(payee).transfer(fundsToCollect);
-        emit Transfer(all_payments[id].from, payee, all_payments[id].amount, id);
     }
 
     function collectAllFunds() public {
