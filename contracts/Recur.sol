@@ -51,7 +51,6 @@ contract Recur {
     event DeletePayment(address from, uint paymentId);
     event DeactivatePayment(address from, uint paymentId);
     event ActivatePayment(address from, uint paymentId);
-    event SendPayment(address from, address to, uint amount);
     event DepletedFunds(uint paymentId);
     event Fund(address who, uint amount, uint paymentId);
     event Withdraw(address who, uint amount, uint paymentId);
