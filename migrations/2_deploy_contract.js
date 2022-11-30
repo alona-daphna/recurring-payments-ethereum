@@ -1,5 +1,5 @@
-const Payment = artifacts.require("./Payment.sol");
+const contract = artifacts.require("./Recur.sol");
 
 module.exports = function (deployer) {
-  deployer.deploy(Payment);
+  deployer.deploy(contract);
 };
