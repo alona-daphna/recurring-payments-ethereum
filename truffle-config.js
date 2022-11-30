@@ -1,6 +1,6 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-const mnemonic = process.env.MNEMONIC;
-const infura = process.env.INFURA_KEY;
+const {INFURA_API_KEY, MNEMONIC} = process.env;
+
 module.exports = {
   contracts_build_directory: './src/contracts',
 
@@ -16,6 +16,13 @@ module.exports = {
         `https://rinkeby.infura.io/v3/${infura}`
       ),
       network_id: 4
+    },
+    goerli: {
+      provider: () => new HDWalletProvider(
+        MNEMONIC,
+        INFURA_API_KEY
+      ),
+      network_id: 5
     }
   },
   compilers: {
