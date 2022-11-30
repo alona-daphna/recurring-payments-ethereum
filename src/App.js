@@ -1,6 +1,7 @@
 import './App.css';
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
+import Recur from "./contracts/Recur.json";
 
 function App() {
   const provider = new ethers.providers.Web3Provider(window.ethereum)
@@ -9,6 +10,11 @@ function App() {
 
   const[connected, setConnected] = useState(false);
   const [installed, setInstalled] = useState(false);
+
+  const contract = new ethers.Contract(
+    '0xf9C3a1922b282943ee0db97bAc1e66b0b8e7BFeD',
+    Recur.abi,
+    provider);
 
   async function setAccountDetails(account) {
     setAccount(account);
@@ -43,6 +49,7 @@ function App() {
     let connected = await isMetaMaskConnected();
     setConnected(connected)
     setInstalled(isMetaMaskInstalled());
+
   }
 
   initialise();
