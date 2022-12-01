@@ -2,11 +2,19 @@ import './App.css';
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import Recur from "./contracts/Recur.json";
+import Popup from './components/Popup';
 
 function App() {
   const provider = new ethers.providers.Web3Provider(window.ethereum)
+  const signer = provider.getSigner();
   const [account, setAccount] = useState('0x0');
   const [balance, setBalance] = useState('0');
+
+  const [paymentId, setPaymentId] = useState(0);
+  const [triggerPopupCreate, setTriggerPopupCreate] = useState(false);
+  const [triggerPopupFund, setTriggerPopupFund] = useState(false);
+  const [triggerPopupWithdraw, setTriggerPopupWithdraw] = useState(false);
+
 
   const[connected, setConnected] = useState(false);
   const [installed, setInstalled] = useState(false);
@@ -15,6 +23,8 @@ function App() {
     '0xf9C3a1922b282943ee0db97bAc1e66b0b8e7BFeD',
     Recur.abi,
     provider);
+
+  const contractWithSigner = contract.connect(signer);
 
   async function setAccountDetails(account) {
     setAccount(account);
@@ -49,7 +59,6 @@ function App() {
     let connected = await isMetaMaskConnected();
     setConnected(connected)
     setInstalled(isMetaMaskInstalled());
-
   }
 
   initialise();
@@ -63,7 +72,22 @@ function App() {
     setAccountDetails(accounts[0])
   }
 
-  
+  function handleCreatePayment() {
+      setTriggerPopupCreate(true);
+  }
+
+  function handleFundPayment() {
+    if(paymentId) {
+      setTriggerPopupFund(true);
+    }
+  }
+
+  function handleWithdraw() {
+    if(paymentId) {
+      setTriggerPopupWithdraw(true)
+    }
+  }
+
   return ( 
     <div className="App">
       {!connected &&
@@ -79,10 +103,26 @@ function App() {
 
       <div className='fund-payment'>
         <form>
-          <input type="button" className='button' value="Withdraw funds" />
-          <input type="number" name="name" placeholder='Enter payment ID' />
-          <input type="button" className='button' value="Fund payment" />
+          <input type="button" className='button' value="Withdraw funds" onClick={handleWithdraw} />
+          <input type="number" name="name" placeholder='Enter payment ID' onChange={(e) => setPaymentId(e.target.value)}/>
+          <input type="button" className='button' onClick={handleFundPayment} value="Fund payment" />
         </form>
+        <Popup 
+          trigger={triggerPopupFund}
+          paymentId={paymentId}
+          setTrigger={setTriggerPopupFund}
+          button="Fund"
+          title="Fund Payment"
+          inputs={["amount"]}>
+        </Popup>
+        <Popup
+          trigger={triggerPopupWithdraw}
+          paymentId={paymentId}
+          setTrigger={setTriggerPopupWithdraw}
+          button="Withdraw"
+          title="Withdraw Funds"
+          inputs={["amount"]}>
+        </Popup>
       </div>
       
       <div className="outgoing box">
@@ -99,7 +139,14 @@ function App() {
           <p>Funded untill</p>
         </div>
         <div className="create-new-payment">
-          <button className='button'>Create new payment</button>
+          <button className='button' onClick={handleCreatePayment}>Create new payment</button>
+          <Popup 
+          trigger={triggerPopupCreate}
+          setTrigger={setTriggerPopupCreate}
+          button="Create"
+          title="Create New Payment"
+          inputs={["label", "to", "amount", "interval"]}>
+          </Popup>
         </div>
       </div>
 
