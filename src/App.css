@@ -1,38 +1,89 @@
+* {
+  margin: 0;
+}
+
+body {
+  background-color: #282c34;
+  color: #fff;
+}
+
 .App {
   text-align: center;
+  min-height: 100%;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.connection {
+  margin-top: 10px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.button {
+  border-radius: 25px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: #000;
+  color: #fff;
+  margin-left: 10px;
+  margin-right: 10px;
+  border: #000 solid 2px;
 }
 
-.App-header {
+.button:hover {
   background-color: #282c34;
-  min-height: 100vh;
+  color: #fff;
+  border: #fff solid 2px;
+}
+
+.connected-account {
+  padding-top: 55px;
+
+}
+
+.fund-payment {
+  margin-top: 50px;
+}
+
+input {
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 5px;
+  border: #fff solid 1px;
+  background-color: #282c34;
+}
+
+.box {
+  margin:auto;
+  margin-top: 50px;
+  width: 75%;
+  height: fit-content;
+  border: #fff solid 2px;
+  border-radius: 25px;
+  padding:0px;
+  padding-bottom: 20px;
+}
+
+.payments-header {
+  background-color: #000;
+  margin-top: 0px;
+  border-radius: 25px;
+  padding: 10px 0;
+}
+
+.payment-details {
+  padding-top: 10px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  flex-direction: row;
+  justify-content: space-around;
+
 }
 
-.App-link {
-  color: #61dafb;
+.create-new-payment, .claim-funds {
+  margin-left: 25px;
+  margin-top: 20px;
+  text-align: start;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.deactivated {
+  margin-bottom: 50px;
 }
+
