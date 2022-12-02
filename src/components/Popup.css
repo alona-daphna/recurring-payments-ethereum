@@ -22,7 +22,7 @@
     text-align: center;
 }
 
-.popup-inner .close-button {
+.popup-inner .action-button {
     margin-left: auto;
     margin-right: auto;
     border-radius: 25px;
@@ -33,6 +33,10 @@
     color: #fff;
     border: #000 solid 2px;
     text-align: center;
+}
+
+.popup-inner .exit-button {
+    position: absolute;
 }
 
 .popup-title {

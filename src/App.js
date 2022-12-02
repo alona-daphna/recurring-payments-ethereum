@@ -26,6 +26,7 @@ function App() {
 
   const contractWithSigner = contract.connect(signer);
 
+
   async function setAccountDetails(account) {
     setAccount(account);
     var balance = await provider.getBalance(account)
@@ -59,12 +60,17 @@ function App() {
     let connected = await isMetaMaskConnected();
     setConnected(connected)
     setInstalled(isMetaMaskInstalled());
+
+    // let payment = await contract.all_payments(1);
+    // let payment = await contract.outgoingPayments(account, 0);
+    // console.log(payment);
   }
 
   initialise();
 
   window.ethereum.on('accountsChanged', async () => {
     initialise();
+    window.location.reload();
   });
 
   async function handleConnect() {
@@ -113,7 +119,9 @@ function App() {
           setTrigger={setTriggerPopupFund}
           button="Fund"
           title="Fund Payment"
-          inputs={["amount"]}>
+          inputs={["amount"]}
+          contract={contractWithSigner}
+          account={account}>
         </Popup>
         <Popup
           trigger={triggerPopupWithdraw}
@@ -121,7 +129,9 @@ function App() {
           setTrigger={setTriggerPopupWithdraw}
           button="Withdraw"
           title="Withdraw Funds"
-          inputs={["amount"]}>
+          inputs={["amount"]}
+          contract={contractWithSigner}
+          account={account}>
         </Popup>
       </div>
       
@@ -145,7 +155,9 @@ function App() {
           setTrigger={setTriggerPopupCreate}
           button="Create"
           title="Create New Payment"
-          inputs={["label", "to", "amount", "interval"]}>
+          inputs={["label", "to", "amount", "interval"]}
+          contract={contractWithSigner}
+          account={account}>
           </Popup>
         </div>
       </div>
